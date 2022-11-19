@@ -1,11 +1,15 @@
 import { IconCameraPlus, IconPlus } from "@tabler/icons";
-import ChevronDown from "../../public/assets/chevronDown.png";
 
 function Add_Product() {
     return (
         <>
-            <div className="flex bg-[#282828] w-full h-[100px] items-center">
+            <div className="flex bg-[#282828] w-full h-[100px] items-center place-content-between pr-16">
                 <p className="text-[26px] text-white ml-[25px] font-semibold">Add New Product</p>
+                <button className="px-[32px] py-[10px] bg-sky-500 rounded-md text-[20px] text-white font-bold
+                                    hover:bg-sky-600 hover:shadow-md hover:transition duration-300"
+                                    id="preview">
+                                    Live Preview
+                </button>
             </div>
 
             <form action="">
