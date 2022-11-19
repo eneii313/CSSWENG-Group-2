@@ -3,6 +3,7 @@ import React from "react";
 import Image from "next/image";
 import { useState } from "react";
 import Admin_Settings from "./admin_settings";
+import Add_Product from "./add_product";
 
 function Admin_Panel() {
     const [hidden, setHidden] = useState(true);
@@ -13,6 +14,8 @@ function Admin_Panel() {
     //Insert needed Pages into array
     const pages = [];
     pages.push({ pageName: "Admin Settings", html: <Admin_Settings /> });
+    //Add New Product
+    pages.push({ pageName: "Add New Product", html: <Add_Product />})
 
     return (
         <div className="flex px-[150px] w-full h-full shadow-lg bg-gray-200">
@@ -136,7 +139,8 @@ function Admin_Panel() {
 
             {/* Pages Container */}
             <div className="w-2/3 h-auto bg-gray-100">
-                {pages[0].html}
+                {/* {pages[0].html} */}
+                { pages[1].html /* View for Add Product */}
             </div>
         </div>
     );
