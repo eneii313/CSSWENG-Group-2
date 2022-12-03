@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from "react";
+import { db } from "../../firebaseConfig";
+import { collection, getDocs } from "firebase/firestore";
 import {
   createStyles,
   Header,
@@ -10,9 +13,11 @@ import {
   Center,
   Box,
   Autocomplete,
+  Divider,
 } from "@mantine/core";
-import { IconFileText, IconSearch } from "@tabler/icons";
+import { IconShoppingCart, IconSearch } from "@tabler/icons";
 import Image from "next/image";
+import { useRouter } from "next/router";
 
 const useStyles = createStyles((theme) => ({
   link: {
@@ -22,9 +27,9 @@ const useStyles = createStyles((theme) => ({
     paddingLeft: theme.spacing.md,
     paddingRight: theme.spacing.md,
     textDecoration: "none",
-    color: theme.colorScheme === "dark" ? theme.white : theme.black,
+    color: theme.colorScheme === "dark" ? theme.white : "#1f2937",
     fontWeight: 500,
-    fontSize: theme.fontSizes.sm,
+    fontSize: theme.fontSizes.md,
 
     [theme.fn.smallerThan("sm")]: {
       height: 42,
@@ -38,6 +43,7 @@ const useStyles = createStyles((theme) => ({
         theme.colorScheme === "dark"
           ? theme.colors.dark[6]
           : theme.colors.gray[0],
+      textDecoration: "underline",
     }),
   },
 
@@ -73,87 +79,110 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-// TODO: Fetch the categories from Firebase instead of hardcoding it here.
-const categories = [
-  {
-    title: "Business & Marketing",
-    items: [
-      "Placeholder 1",
-      "Placeholder 2",
-      "Placeholder 3",
-      "Placeholder 4",
-      "Placeholder 5",
-    ],
-  },
-  {
-    title: "Events",
-    items: [
-      "Placeholder 6",
-      "Placeholder 7",
-      "Placeholder 8",
-      "Placeholder 9",
-      "Placeholder 10",
-      "Placeholder 11",
-      "Placeholder 12",
-    ],
-  },
-  {
-    title: "Office & Stationery",
-    items: ["Placeholder 13", "Placeholder 14", "Placeholder 15"],
-  },
-];
-
-const products = [
-  "Gift Tags",
-  "Gift Wrapping Paper",
-  "Notecards",
-  "Notecards Again",
-  "Some Random Stuff 1",
-  "Some Random Stuff 2",
-  "Some Random Stuff 3",
-  "Some Random Stuff 4",
-  "Photocards",
-  "Sticker and Labels",
-];
-
 export default function NavBar() {
   const { classes, theme } = useStyles();
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [search, setSearch] = useState("");
+  const router = useRouter();
 
-  // TODO: Extract this into another component
-  const links = categories.map((category) => (
-    <HoverCard
-      width={400}
-      position="right-start"
-      shadow="md"
-      withinPortal
-      closeDelay={0}
-      key={category.title}
-    >
-      <HoverCard.Target>
-        <UnstyledButton className={classes.subLink}>
-          <Group noWrap align="flex-start">
-            <div>
-              <Text size="sm" weight={500}>
-                {category.title}
-              </Text>
-            </div>
-          </Group>
-        </UnstyledButton>
-      </HoverCard.Target>
+  useEffect(() => {
+    try {
+      getDocs(collection(db, "products"))
+        .then((res) => {
+          const productList = [];
+          const categoryList = {};
+          res.forEach((doc) => {
+            const product = doc.data();
+            if (
+              product.hasOwnProperty("name") &&
+              product.hasOwnProperty("image_urls") &&
+              product.hasOwnProperty("product_id") &&
+              product.hasOwnProperty("category") &&
+              product.image_urls.length > 0
+            ) {
+              productList.push(doc.data());
 
-      <HoverCard.Dropdown sx={{ overflow: "hidden" }}>
-        <SimpleGrid cols={1} spacing={0}>
-          {category.items.map((item) => (
-            <a href={`/products/${item}`} key={item}>
-              <UnstyledButton className={classes.subLink}>
-                {item}
-              </UnstyledButton>
-            </a>
-          ))}
-        </SimpleGrid>
-      </HoverCard.Dropdown>
-    </HoverCard>
-  ));
+              if (categoryList[product.category]) {
+                categoryList[product.category].push({
+                  name: product.name,
+                  id: product.product_id,
+                });
+              } else {
+                categoryList[product.category] = [
+                  { name: product.name, id: product.product_id },
+                ];
+              }
+            }
+          });
+          setProducts(productList);
+          setCategories(categoryList);
+        })
+        .catch((err) => console.error(err));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const handleKeypress = (e) => {
+    if (e.key === "Enter") {
+      const searchResult = products.filter((product) => {
+        return product.name.toLowerCase().match(search.toLowerCase());
+      });
+
+      console.log(e, searchResult);
+
+      if (searchResult.length < 1) {
+        return;
+      } else if (searchResult[0].name.length === search.length) {
+        router.push(`/products/${searchResult[0].product_id}`);
+      } else {
+        setSearch(searchResult[0].name);
+      }
+    }
+  };
+
+  const links = [];
+  Object.keys(categories).forEach((key) => {
+    if (key === "") {
+      return;
+    }
+
+    links.push(
+      <HoverCard
+        width={400}
+        position="right-start"
+        shadow="md"
+        withinPortal
+        closeDelay={20}
+        key={key}
+      >
+        <HoverCard.Target>
+          <UnstyledButton className={classes.subLink}>
+            <Group noWrap align="flex-start">
+              <div>
+                <Text weight={500}>
+                  {key}
+                </Text>
+              </div>
+            </Group>
+          </UnstyledButton>
+        </HoverCard.Target>
+
+        <HoverCard.Dropdown sx={{ overflow: "hidden" }}>
+          <SimpleGrid cols={1} spacing={0}>
+            {categories[key].map((item) => (
+              <a href={`/products/${item.id}`} key={item.name}>
+                <UnstyledButton className={classes.subLink}>
+                  {item.name}
+                </UnstyledButton>
+              </a>
+            ))}
+          </SimpleGrid>
+        </HoverCard.Dropdown>
+      </HoverCard>
+    );
+  });
 
   return (
     <Box sx={classes.header}>
@@ -163,13 +192,13 @@ export default function NavBar() {
             <Anchor href="/">
               <Image
                 src="/../public/assets/Company Logo.png"
-                width="251px"
-                height="70px"
+                width="252px"
+                height="80px"
                 alt="company logo"
               />
             </Anchor>
             <Group
-              sx={{ height: "60px", borderLeft: "1px solid #000000" }}
+              sx={{ height: "60px", borderLeft: "1px solid #292929" }}
               spacing={0}
             >
               <HoverCard width={200} position="bottom" shadow="md" withinPortal>
@@ -177,16 +206,11 @@ export default function NavBar() {
                   <a href="/products" className={classes.link}>
                     <Center inline>
                       <Box component="span" mr={5}>
-                        <Text size="md" underline="true" weight="bold">
+                        <Text size="md" weight="bold">
                           PRODUCTS
                         </Text>
                       </Box>
-                      <Image
-                        src="/../public/assets/material-symbols_arrow-drop-down-rounded.png"
-                        width="33"
-                        height="33"
-                        alt="down arrow"
-                      />
+                      <i class="fa fa-caret-down" />
                     </Center>
                   </a>
                 </HoverCard.Target>
@@ -194,6 +218,12 @@ export default function NavBar() {
                 <HoverCard.Dropdown sx={{ overflow: "hidden" }}>
                   <SimpleGrid cols={1} spacing={0}>
                     {links}
+                    <Divider mb={10}/>
+                    <a href="/products">
+                      <UnstyledButton className={classes.subLink} width= {400} >
+                        View All Products
+                      </UnstyledButton>
+                    </a>
                   </SimpleGrid>
                 </HoverCard.Dropdown>
               </HoverCard>
@@ -209,15 +239,27 @@ export default function NavBar() {
               transitionDuration={80}
               transitionTimingFunction="ease"
               shadow="md"
-              data={products}
+              data={products.map((product) => {
+                return product.name;
+              })}
+              onKeyDown={handleKeypress}
+              onChange={(e) => {
+                setSearch(e);
+              }}
+              value={search}
             />
 
+            {/* TODO: Add Cart Link */}
             <a href="#" className={classes.link}>
               <Center inline>
-                <IconFileText size="46px" color={theme.fn.primaryColor()} />
-                <Box component="span" mr={5}>
+                <IconShoppingCart size="46px" color="#292929" />
+                <Box component="span" mx={15}>
                   <Text size="md" weight="bold">
-                    ORDER NOW!
+                    Your Cart:
+                  </Text>
+                  {/* TODO: Number of Items in Cart */}
+                  <Text size="md">
+                    __ items
                   </Text>
                 </Box>
               </Center>

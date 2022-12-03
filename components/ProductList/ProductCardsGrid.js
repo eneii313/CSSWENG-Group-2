@@ -13,7 +13,7 @@ const useStyles = createStyles((theme) => ({
     transition: "transform 150ms ease, box-shadow 150ms ease",
 
     "&:hover": {
-      transform: "scale(1.01)",
+      transform: "scale(1.05)",
     },
   },
 
@@ -22,6 +22,10 @@ const useStyles = createStyles((theme) => ({
     fontWeight: 700,
     fontSize: 24,
     textAlign: "center",
+
+    "&:hover": {
+      textDecoration: "underline"
+    },
   },
 }));
 
@@ -30,18 +34,18 @@ export default function ProductCardsGrid({ productList }) {
 
   const cards = productList.map((product) => (
     <Card
-      key={product.title}
+      key={product.name}
       p="0"
       component="a"
-      href={`/products/${product.title}`}
+      href={`/products/${product.product_id}`}
       className={classes.card}
       style={{ boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)" }}
     >
       <AspectRatio ratio={16 / 9}>
-        <Image src={product.image} alt="product image" fit="contain" />
+        <Image src={product.image_urls[0]} alt="product image" fit="contain" />
       </AspectRatio>
       <Text className={classes.title} m="md">
-        {product.title}
+        {product.name}
       </Text>
     </Card>
   ));
